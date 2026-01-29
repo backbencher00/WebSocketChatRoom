@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocket Room Chat</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #0f172a; color: #e5e7eb; }
+        #chat { height: 300px; border: 1px solid #334155; padding: 10px; overflow-y: auto; margin-bottom: 10px; }
+        input, button { padding: 8px; margin: 4px; }
+    </style>
+</head>
+<body>
+
+<h2>WebSocket Room Chat</h2>
+
+Room:
+<input id="roomInput" placeholder="room1" />
+<button onclick="joinRoom()">Join Room</button>
+
+<div id="status"></div>
+
+<div id="chat"></div>
+
+<input id="msgInput" placeholder="Type message..." />
+<button onclick="sendMsg()">Send</button>
+
+<script>
+    let ws;
+
+    function addMessageToUI(msg) {
+      const chat = document.getElementById("chat");
+      const div = document.createElement("div");
+      div.innerText = msg;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function joinRoom() {
+      const room = document.getElementById("roomInput").value || "lobby";
+
+      if (ws) ws.close();
+
+      ws = new WebSocket("ws://localhost:8080/ws/" + room);
+
+      ws.onopen = () => {
+        document.getElementById("status").innerText = "Connected to room: " + room;
+        document.getElementById("chat").innerHTML = "";
+        addMessageToUI("✅ Joined room: " + room);
+      };
+
+      ws.onmessage = (e) => {
+        addMessageToUI(e.data);
+      };
+
+      ws.onclose = () => {
+        document.getElementById("status").innerText = "Disconnected";
+        addMessageToUI("❌ Disconnected");
+      };
+
+      ws.onerror = (e) => {
+        console.log("WebSocket error", e);
+      };
+    }
+
+    function sendMsg() {
+      const msg = document.getElementById("msgInput").value;
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        alert("Join a room first");
+        return;
+      }
+      ws.send(msg);
+      document.getElementById("msgInput").value = "";
+    }
+</script>
+
+</body>
+</html>
